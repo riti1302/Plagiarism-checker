@@ -1,52 +1,72 @@
 import os
 from difflib import SequenceMatcher
 import multiprocessing
+import PyPDF2
 
-File = 'coverLetter.txt'
-path = 'database/'
-flag = 0
-listOfFile = os.listdir(path)
-#print(listOfFile)
-numberOfFiles = len(os.listdir(path))
-p1 = int(numberOfFiles/2)
-print("p1 ", p1)
-patch1 = listOfFile[0:p1]
-patch2 = listOfFile[p1:numberOfFiles]
 
-def thread1(patch1):
+def read_pdf(file):
+	pdfFileObject = open(file, 'rb')
+	pdfReader = PyPDF2.PdfFileReader(pdfFileObject)
+	count = pdfReader.numPages
+	string = ""
+	for i in range(count):
+	    page = pdfReader.getPage(i)
+	    content = page.extractText()
+	    string += content
+	return string
+
+def thread1(patch1, return1):
+	flag = 0
 	for file in patch1:
 		file = os.path.join(path, file)
-		with open (File) as file_1, open(file) as file_2:
-			check_data = file_1.read()
-			database_data = file_2.read()
-			similarity_ratio = SequenceMatcher(None, check_data, database_data).ratio()
-			print(similarity_ratio)
+		check_data = read_pdf(File)
+		database_data = read_pdf(file)
+		similarity_ratio = SequenceMatcher(None, check_data, database_data).ratio()
+		#print(similarity_ratio)
 
 		if similarity_ratio > 0.1:               #To increase the string matching efficiency, decrease the similarity ratio 
 			print("Copied thesis from {}".format(file))
 			flag = 1
+		return1[flag] = flag
 
-def thread2(patch2):
+def thread2(patch2, return2):
+	flag = 0
 	for file in patch2:
 		file = os.path.join(path, file)
-		with open (File) as file_1, open(file) as file_2:
-			check_data = file_1.read()
-			database_data = file_2.read()
-			similarity_ratio = SequenceMatcher(None, check_data, database_data).ratio()
-			print(similarity_ratio)
+		check_data = read_pdf(File)
+		database_data = read_pdf(file)
+		similarity_ratio = SequenceMatcher(None, check_data, database_data).ratio()
+		#print(similarity_ratio)
 
 		if similarity_ratio > 0.1:               #To increase the string matching efficiency, decrease the similarity ratio 
 			print("Copied thesis from {}".format(file))
 			flag = 1
+		return2[flag] = flag
 
-p1 = multiprocessing.Process(target=thread1, args=(patch1, )) 
-p2 = multiprocessing.Process(target=thread2, args=(patch2, )) 
+if __name__ == '__main__':
+	File = 'Primjer_esej.pdf'
+	path = 'Database/'
 
-p1.start()
-p2.start()
+	listOfFile = os.listdir(path)
+	numberOfFiles = len(os.listdir(path))
+	p1 = int(numberOfFiles/2)
+	patch1 = listOfFile[0:p1]
+	patch2 = listOfFile[p1:numberOfFiles]
+	
+	manager = multiprocessing.Manager()
+	return1 = manager.dict()
+	return2 = manager.dict()
 
-p1.join()
-p2.join()
+	p1 = multiprocessing.Process(target=thread1, args=(patch1, return1)) 
+	p2 = multiprocessing.Process(target=thread2, args=(patch2, return2)) 
 
-#if flag == 0:
-#	print("Original thesis")
+	p1.start()
+	p2.start()
+
+	p1.join()
+	p2.join()
+
+	if return1 == 0 and return2 == 0:
+		print("Bravo! Original thesis")
+
+
