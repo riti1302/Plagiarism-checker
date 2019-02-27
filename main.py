@@ -2,6 +2,19 @@ import os
 from difflib import SequenceMatcher
 import multiprocessing
 import PyPDF2
+from fuzzywuzzy import fuzz 
+
+def check_ratio(file):
+	flag = 0
+	file = os.path.join(path, file)
+	check_data = read_pdf(File)
+	database_data = read_pdf(file)
+	similarity_ratio = fuzz.ratio(check_data, database_data)
+	print(similarity_ratio)
+	if similarity_ratio > 50:               #To increase the string matching efficiency, decrease the similarity ratio 
+		print("Copied thesis from {}".format(file))
+		flag = 1
+	return flag
 
 
 def read_pdf(file):
@@ -16,31 +29,13 @@ def read_pdf(file):
 	return string
 
 def thread1(patch1, return1):
-	flag = 0
 	for file in patch1:
-		file = os.path.join(path, file)
-		check_data = read_pdf(File)
-		database_data = read_pdf(file)
-		similarity_ratio = SequenceMatcher(None, check_data, database_data).ratio()
-		#print(similarity_ratio)
-
-		if similarity_ratio > 0.1:               #To increase the string matching efficiency, decrease the similarity ratio 
-			print("Copied thesis from {}".format(file))
-			flag = 1
+		flag = check_ratio(file)
 		return1[flag] = flag
 
 def thread2(patch2, return2):
-	flag = 0
 	for file in patch2:
-		file = os.path.join(path, file)
-		check_data = read_pdf(File)
-		database_data = read_pdf(file)
-		similarity_ratio = SequenceMatcher(None, check_data, database_data).ratio()
-		#print(similarity_ratio)
-
-		if similarity_ratio > 0.1:               #To increase the string matching efficiency, decrease the similarity ratio 
-			print("Copied thesis from {}".format(file))
-			flag = 1
+		flag = check_ratio(file)
 		return2[flag] = flag
 
 if __name__ == '__main__':
@@ -52,7 +47,7 @@ if __name__ == '__main__':
 	p1 = int(numberOfFiles/2)
 	patch1 = listOfFile[0:p1]
 	patch2 = listOfFile[p1:numberOfFiles]
-	
+
 	manager = multiprocessing.Manager()
 	return1 = manager.dict()
 	return2 = manager.dict()
