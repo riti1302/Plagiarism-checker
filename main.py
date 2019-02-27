@@ -19,7 +19,7 @@ def check_ratio(file):
 
 def read_pdf(file):
 	pdfFileObject = open(file, 'rb')
-	pdfReader = PyPDF2.PdfFileReader(pdfFileObject)
+	pdfReader = PyPDF2.PdfFileReader(pdfFileObject, strict=False)
 	count = pdfReader.numPages
 	string = ""
 	for i in range(count):
