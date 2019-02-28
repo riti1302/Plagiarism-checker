@@ -5,6 +5,17 @@ import PyPDF2
 from fuzzywuzzy import fuzz 
 from tqdm import tqdm 
 
+def read_pdf(file):
+	pdfFileObject = open(file, 'rb')
+	pdfReader = PyPDF2.PdfFileReader(pdfFileObject, strict=False)
+	count = pdfReader.numPages
+	string = ""
+	for i in range(count):
+	    page = pdfReader.getPage(i)
+	    content = page.extractText()
+	    string += content
+	return string
+
 def check_ratio(folder):
 	global flag
 	try:
@@ -18,46 +29,33 @@ def check_ratio(folder):
 			if similarity_ratio > 50:               #To increase the string matching efficiency, decrease the similarity ratio 
 				print("Copied thesis from {}".format(file))
 				flag = 1
-				break
 	except:
 		pass
 	return flag
 
-
-def read_pdf(file):
-	pdfFileObject = open(file, 'rb')
-	pdfReader = PyPDF2.PdfFileReader(pdfFileObject, strict=False)
-	count = pdfReader.numPages
-	string = ""
-	for i in range(count):
-	    page = pdfReader.getPage(i)
-	    content = page.extractText()
-	    string += content
-	return string
-
-def thread1(patch1, return1):
+def thread1(patch1, returns1):
 	for folder in tqdm(patch1):
 		folder = os.path.join(path,folder)
 		flag = check_ratio(folder)
-		return1[flag] = flag
+	returns1[0] = flag
 
-def thread2(patch2, return2):
+def thread2(patch2, returns2):
 	for folder in tqdm(patch2):
 		folder = os.path.join(path,folder)
 		flag = check_ratio(folder)
-		return2[flag] = flag
+	returns2[0] = flag
 
-def thread3(patch3, return3):
+def thread3(patch3, returns3):
 	for folder in tqdm(patch3):
 		folder = os.path.join(path,folder)
 		flag = check_ratio(folder)
-		return3[flag] = flag
+	returns3[0] = flag
 
-def thread4(patch4, return4):
+def thread4(patch4, returns4):
 	for folder in tqdm(patch4):
 		folder = os.path.join(path,folder)
 		flag = check_ratio(folder)
-		return4[flag] = flag
+	returns4[0] = flag
 
 if __name__ == '__main__':
 	File = 'sample.pdf'
@@ -67,8 +65,9 @@ if __name__ == '__main__':
 
 	listOfFile = os.listdir(path)
 	numberOfFiles = len(os.listdir(path))
+	numberOfThreads = 4
 
-	partition = [int(numberOfFiles*i/4) for i in range(0,5)]
+	partition = [int(numberOfFiles*i/numberOfThreads) for i in range(0,numberOfThreads+1)]
 	manager = multiprocessing.Manager()
 	#print(partition)
 
@@ -79,25 +78,24 @@ if __name__ == '__main__':
 			patch = listOfFile[j:i]
 			patches.append(patch)
 		j = i
-		#print(patch)
 	
-	return1 = manager.dict()
-	return2 = manager.dict()
-	return3 = manager.dict()
-	return4 = manager.dict()
-
-	p1 = multiprocessing.Process(target=thread1, args=(patches[0:1][0], return1)) 
-	p2 = multiprocessing.Process(target=thread2, args=(patches[1:2][0], return2)) 
-	p3 = multiprocessing.Process(target=thread3, args=(patches[2:3][0], return3)) 
-	p4 = multiprocessing.Process(target=thread4, args=(patches[3:4][0], return4)) 
-
+	returns1 = manager.dict()
+	returns2 = manager.dict()
+	returns3 = manager.dict()
+	returns4 = manager.dict()
+	
+	p1 = multiprocessing.Process(target=thread1, args=(patches[0:1][0], returns1)) 
+	p2 = multiprocessing.Process(target=thread2, args=(patches[1:2][0], returns2)) 
+	p3 = multiprocessing.Process(target=thread3, args=(patches[2:3][0], returns3)) 
+	p4 = multiprocessing.Process(target=thread4, args=(patches[3:4][0], returns4)) 
 	process = [p1, p2, p3, p4]
 	for p in process:
 		p.start()
 	for p in process:
 		p.join()
 
-	#print(return1, return2, return3, return4)
-
-	if return1[0] == 0 and return2[0] == 0 and return3[0] == 0 and return4[0] == 0:
+	if returns1[0] == 0 and returns2[0] == 0 and returns3[0] == 0 and returns4[0] == 0:
 		print("Bravo! Original thesis")
+	else:
+		print("Copied work")
+
